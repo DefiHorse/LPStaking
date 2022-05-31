@@ -117,14 +117,21 @@ contract StakingTokenLP is Pausable, Ownable, DfhPrice, StakingOptions {
         view 
         returns(uint256)
     {
+        uint256 _reward = estLpToToken(_amountStakeLP);
+        uint256 _result = _reward * (_apy * (10**18) / 100) *_lockDay;
+        return (_result / 365 days) / (10**18);      
+    }
+
+    function estLpToToken(uint256 _amount)
+        public
+        view
+        returns(uint256)
+    {
         uint256 _totalValueofLP;
         uint256 _totalSupplyofLP;
         uint256 _curPriceToken;
-        (_totalValueofLP,_totalSupplyofLP, _curPriceToken) = _calcReturnedValue(lpToken);
-
-        uint256 _reward = ((_totalValueofLP/_totalSupplyofLP) * (_amountStakeLP)) / _curPriceToken;
-        uint256 _result = _reward * (_apy * (10**18) / 100) *_lockDay;
-        return (_result / 365 days) / (10**18);      
+        (_totalValueofLP, _totalSupplyofLP, _curPriceToken) = calcReturnedValue(lpToken);
+        return  ((_totalValueofLP  * _amount) / _totalSupplyofLP) * (10**18) / _curPriceToken;
     }
     
     function userUnstake(uint256 _ops, uint256 _id) public {
@@ -147,6 +154,7 @@ contract StakingTokenLP is Pausable, Ownable, DfhPrice, StakingOptions {
 
             info.reward = _reward;
             totalAccumulatedRewardsReleased = totalAccumulatedRewardsReleased + _reward;
+            infoTotal[msg.sender].totalUserReward += _reward;
         }
         info.endTime = block.timestamp;
         info.isActive = false;
@@ -232,18 +240,6 @@ contract StakingTokenLP is Pausable, Ownable, DfhPrice, StakingOptions {
             info.valueAPY,
             _reward
         );
-    }
-
-    function estLpToToken(uint256 _amount)
-        public
-        view
-        returns(uint256)
-    {
-        uint256 _totalValueofLP;
-        uint256 _totalSupplyofLP;
-        uint256 _curPriceToken;
-        (_totalValueofLP, _totalSupplyofLP, _curPriceToken) = _calcReturnedValue(lpToken);
-        return  (((_totalValueofLP / _totalSupplyofLP) * _amount) / _curPriceToken);
     }
     
     // amount BNB
